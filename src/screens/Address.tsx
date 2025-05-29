@@ -8,6 +8,7 @@ import {
   TextInput,
   Alert,
   ActivityIndicator,
+  SafeAreaView,
 } from 'react-native';
 import Icon from 'react-native-vector-icons/MaterialIcons';
 import { FontFamily, Color, Border, FontSize } from '../styles/GlobalStyles';
@@ -54,8 +55,19 @@ const AddressScreen: React.FC<Props> = ({ navigation }) => {
   const [editingAddress, setEditingAddress] = useState<Address | null>(null);
   const [isLoading, setIsLoading] = useState<boolean>(false);
 
+  const BACKEND_BASE_URL = 'http://10.0.2.2:5000';
+
+  const getImageUrl = (imagePath: string | null) => {
+    if (!imagePath) return '';
+    if (imagePath.startsWith('http')) return imagePath;
+    if (imagePath.toLowerCase().startsWith('/uploads')) {
+      return `${BACKEND_BASE_URL}/uploads${imagePath.substring(8)}`;
+    }
+    return imagePath;
+  };
+
   const fetchAddresses = useCallback(async () => {
-    console.log('User:', user); // Debug user
+    console.log('User:', user);
     if (!user?.id) {
       Alert.alert('Lỗi', 'Vui lòng đăng nhập để xem địa chỉ');
       return;
@@ -98,14 +110,12 @@ const AddressScreen: React.FC<Props> = ({ navigation }) => {
     setIsLoading(true);
     try {
       if (editingAddress) {
-        // Cập nhật địa chỉ
         const response = await api.put(`/addresses/${editingAddress.id}`, form);
         setAddresses(addresses.map(addr =>
           addr.id === editingAddress.id ? response.data.address : addr
         ));
         Alert.alert('Thành công', 'Địa chỉ đã được cập nhật');
       } else {
-        // Thêm địa chỉ mới
         const response = await api.post('/addresses', {
           userId: user.id,
           ...form,
@@ -113,7 +123,6 @@ const AddressScreen: React.FC<Props> = ({ navigation }) => {
         setAddresses([...addresses, response.data.address]);
         Alert.alert('Thành công', 'Địa chỉ đã được thêm');
       }
-      // Không reset form để giữ giá trị
       setEditingAddress(null);
     } catch (error: any) {
       Alert.alert('Lỗi', error.response?.data?.message || 'Không thể lưu địa chỉ');
@@ -123,7 +132,6 @@ const AddressScreen: React.FC<Props> = ({ navigation }) => {
   };
 
   const handleCancel = () => {
-    // Chỉ xóa trạng thái chỉnh sửa, giữ form
     setEditingAddress(null);
   };
 
@@ -177,22 +185,22 @@ const AddressScreen: React.FC<Props> = ({ navigation }) => {
         ...addr,
         isDefault: addr.id === id,
       })));
-      Alert.alert('Thành công', 'Đã đặt làm địa chỉ chính');
+      Alert.alert('Thành công', 'Đã đặt làm địa chỉ mặc định');
     } catch (error: any) {
-      Alert.alert('Lỗi', error.response?.data?.message || 'Không thể đặt địa chỉ chính');
+      Alert.alert('Lỗi', error.response?.data?.message || 'Không thể đặt địa chỉ mặc định');
     } finally {
       setIsLoading(false);
     }
   };
 
   return (
-    <View style={styles.addressScreen}>
+    <SafeAreaView style={styles.addressScreen}>
       {/* Title Bar */}
       <View style={styles.titlebar}>
         <Pressable style={styles.backButton} onPress={() => navigation.goBack()}>
           <Icon name="arrow-back" size={23} color={Color.labelColorLightPrimary} />
         </Pressable>
-        <Text style={styles.titleText}>My Address</Text>
+        <Text style={styles.titleText}>Địa chỉ của tôi</Text>
         <Pressable
           style={styles.addButton}
           onPress={() => {
@@ -218,11 +226,9 @@ const AddressScreen: React.FC<Props> = ({ navigation }) => {
         {isLoading && (
           <ActivityIndicator size="large" color={Color.labelColorLightPrimary} style={styles.loading} />
         )}
-        {/* Thông báo khi không có địa chỉ */}
         {!isLoading && addresses.length === 0 && (
           <Text style={styles.noAddressesText}>Chưa có địa chỉ mặc định</Text>
         )}
-        {/* Danh sách địa chỉ */}
         {addresses.map(address => (
           <View
             key={address.id}
@@ -251,20 +257,19 @@ const AddressScreen: React.FC<Props> = ({ navigation }) => {
             </View>
             {address.isDefault && (
               <View style={styles.defaultBadge}>
-                <Text style={styles.defaultBadgeText}>DEFAULT</Text>
+                <Text style={styles.defaultBadgeText}>MẶC ĐỊNH</Text>
               </View>
             )}
           </View>
         ))}
 
-        {/* Form nhập liệu */}
         <View style={styles.defaultAddress}>
           <View style={styles.inputContainer}>
             <View style={styles.inputField}>
               <Icon name="person-outline" size={20} color={Color.colorGray} style={styles.inputIcon} />
               <TextInput
                 style={styles.input}
-                placeholder="Name"
+                placeholder="Tên người nhận"
                 value={form.recipientName}
                 onChangeText={text => setForm({ ...form, recipientName: text })}
                 autoCapitalize="words"
@@ -274,7 +279,7 @@ const AddressScreen: React.FC<Props> = ({ navigation }) => {
               <Icon name="location-on" size={20} color={Color.colorGray} style={styles.inputIcon} />
               <TextInput
                 style={styles.input}
-                placeholder="Address"
+                placeholder="Địa chỉ"
                 value={form.addressLine}
                 onChangeText={text => setForm({ ...form, addressLine: text })}
               />
@@ -284,7 +289,7 @@ const AddressScreen: React.FC<Props> = ({ navigation }) => {
                 <Icon name="pin" size={20} color={Color.colorGray} style={styles.inputIcon} />
                 <TextInput
                   style={styles.input}
-                  placeholder="Zip code"
+                  placeholder="Mã bưu điện"
                   value={form.zipCode}
                   onChangeText={text => setForm({ ...form, zipCode: text })}
                   keyboardType="numeric"
@@ -294,7 +299,7 @@ const AddressScreen: React.FC<Props> = ({ navigation }) => {
                 <Icon name="location-city" size={20} color={Color.colorGray} style={styles.inputIcon} />
                 <TextInput
                   style={styles.input}
-                  placeholder="City"
+                  placeholder="Thành phố"
                   value={form.city}
                   onChangeText={text => setForm({ ...form, city: text })}
                 />
@@ -304,7 +309,7 @@ const AddressScreen: React.FC<Props> = ({ navigation }) => {
               <Icon name="public" size={20} color={Color.colorGray} style={styles.inputIcon} />
               <TextInput
                 style={styles.input}
-                placeholder="Country"
+                placeholder="Quốc gia"
                 value={form.country}
                 onChangeText={text => setForm({ ...form, country: text })}
                 autoCapitalize="words"
@@ -315,7 +320,7 @@ const AddressScreen: React.FC<Props> = ({ navigation }) => {
               <Icon name="phone" size={20} color={Color.colorGray} style={styles.inputIcon} />
               <TextInput
                 style={styles.input}
-                placeholder="Phone Number"
+                placeholder="Số điện thoại"
                 value={form.phoneNumber}
                 onChangeText={text => setForm({ ...form, phoneNumber: text })}
                 keyboardType="phone-pad"
@@ -330,13 +335,12 @@ const AddressScreen: React.FC<Props> = ({ navigation }) => {
                 size={20}
                 color={form.isDefault ? Color.labelColorLightPrimary : Color.colorGray}
               />
-              <Text style={styles.makeDefaultText}>Make default</Text>
+              <Text style={styles.makeDefaultText}>Đặt làm mặc định</Text>
             </Pressable>
           </View>
         </View>
       </ScrollView>
 
-      {/* Custom Buttons */}
       <View style={styles.buttonContainer}>
         <Pressable
           style={({ pressed }) => [
@@ -348,11 +352,11 @@ const AddressScreen: React.FC<Props> = ({ navigation }) => {
           disabled={isLoading}
         >
           <Text style={styles.buttonText}>
-            {editingAddress ? 'Update settings' : 'Save settings'}
+            {editingAddress ? 'Cập nhật thông tin' : 'Lưu thông tin'}
           </Text>
         </Pressable>
       </View>
-    </View>
+    </SafeAreaView>
   );
 };
 

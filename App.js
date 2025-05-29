@@ -1,4 +1,4 @@
-import React from 'react';
+import React, { useEffect } from 'react';
 import { NavigationContainer } from '@react-navigation/native';
 import { createStackNavigator } from '@react-navigation/stack';
 import { createBottomTabNavigator } from '@react-navigation/bottom-tabs';
@@ -10,19 +10,19 @@ import CartScreen from './src/screens/Cart';
 import WishlistScreen from './src/screens/Wishlist';
 import LoginScreen from './src/screens/Login';
 import SignupScreen from './src/screens/Signup';
-import AddressScreen from './src/screens/Address'; // Thêm AddressScreen
+import AddressScreen from './src/screens/Address';
+import PostProduct from './src/screens/PostProduct';
+import CategoryProducts from './src/screens/CategoryProducts';
 
 import NavigationBar from './src/components/NavigationBar';
 
 import { WishlistProvider } from './src/contexts/WishlistContext';
-import { AuthProvider } from './src/contexts/AuthContext';
-import PostProduct from './src/screens/PostProduct';
+import { AuthProvider, useAuth } from './src/contexts/AuthContext';
 
 const Stack = createStackNavigator();
 const Tab = createBottomTabNavigator();
 const AuthStack = createStackNavigator();
 
-// Authentication stack for login/signup screens
 const AuthNavigator = () => {
   return (
     <AuthStack.Navigator screenOptions={{ headerShown: false }}>
@@ -32,7 +32,6 @@ const AuthNavigator = () => {
   );
 };
 
-// Main tab navigator - Home is always accessible, other screens check auth
 const MainTabNavigator = () => {
   return (
     <Tab.Navigator
@@ -47,38 +46,55 @@ const MainTabNavigator = () => {
   );
 };
 
+const AppNavigator = () => {
+  const { isAuthenticated, loading } = useAuth();
+
+  useEffect(() => {
+    if (loading) return;
+  }, [isAuthenticated, loading]);
+
+  return (
+    <Stack.Navigator initialRouteName={isAuthenticated ? 'MainTabs' : 'Auth'}>
+      <Stack.Screen
+        name="MainTabs"
+        component={MainTabNavigator}
+        options={{ headerShown: false }}
+      />
+      <Stack.Screen
+        name="ProductDetail"
+        component={ProductDetail}
+        options={{ headerShown: false }}
+      />
+      <Stack.Screen
+        name="Auth"
+        component={AuthNavigator}
+        options={{ headerShown: false }}
+      />
+      <Stack.Screen
+        name="Address"
+        component={AddressScreen}
+        options={{ headerShown: false }}
+      />
+      <Stack.Screen
+        name="PostProduct"
+        component={PostProduct}
+        options={{ headerShown: false }}
+      />
+      <Stack.Screen
+        name="CategoryProducts"
+        component={CategoryProducts}
+        options={{ headerShown: false }}
+      />
+    </Stack.Navigator>
+  );
+};
+
 const App = () => {
   return (
     <AuthProvider>
       <WishlistProvider>
         <NavigationContainer>
-          <Stack.Navigator initialRouteName="MainTabs">
-            <Stack.Screen
-              name="MainTabs"
-              component={MainTabNavigator}
-              options={{ headerShown: false }}
-            />
-            <Stack.Screen
-              name="ProductDetail"
-              component={ProductDetail}
-              options={{ headerShown: false }}
-            />
-            <Stack.Screen
-              name="Auth"
-              component={AuthNavigator}
-              options={{ headerShown: false }}
-            />
-            <Stack.Screen
-              name="Address"
-              component={AddressScreen}
-              options={{ headerShown: false }}
-            />
-               <Stack.Screen
-              name="PostProduct"
-              component={PostProduct}
-              options={{ headerShown: false }}
-            />
-          </Stack.Navigator>
+          <AppNavigator />
         </NavigationContainer>
       </WishlistProvider>
     </AuthProvider>

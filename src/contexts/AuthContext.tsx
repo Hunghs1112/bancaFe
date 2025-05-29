@@ -5,7 +5,7 @@ import AsyncStorage from '@react-native-async-storage/async-storage';
 interface User {
   id: number;
   email: string;
-  username?: string; // username là tùy chọn
+  name?: string; // Changed from username to name, still optional
 }
 
 // Create context
@@ -110,7 +110,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
     loading,
     login,
     signup,
-    logout
+    logout,
   };
 
   return (

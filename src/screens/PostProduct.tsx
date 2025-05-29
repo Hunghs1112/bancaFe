@@ -19,9 +19,8 @@ import { NativeStackNavigationProp } from '@react-navigation/native-stack';
 import Icon from 'react-native-vector-icons/Ionicons';
 import api from '../services/api';
 import { Color, FontFamily, FontSize, Border } from '../styles/GlobalStyles';
-import { launchCamera, launchImageLibrary } from 'react-native-image-picker';
+import { launchCamera, launchImageLibrary, ImageLibraryOptions, CameraOptions } from 'react-native-image-picker';
 
-// Navigation stack param list
 type RootStackParamList = {
   Auth: { screen: string };
   Home: undefined;
@@ -34,10 +33,8 @@ type RootStackParamList = {
   PostProduct: undefined;
 };
 
-// Navigation prop type
 type NavigationProp = NativeStackNavigationProp<RootStackParamList>;
 
-// Category type
 interface Category {
   id: number;
   name: string;
@@ -57,20 +54,20 @@ const PostProduct: React.FC = () => {
   const [loading, setLoading] = useState<boolean>(false);
   const [categoriesLoading, setCategoriesLoading] = useState<boolean>(true);
 
-  // Fetch categories on component mount
   useEffect(() => {
     const fetchCategories = async () => {
       setCategoriesLoading(true);
       try {
         const response = await api.get('/categories');
-        const fetchedCategories = response.data;
+        const fetchedCategories = Array.isArray(response.data) ? response.data : response.data?.categories || [];
         setCategories(fetchedCategories);
         if (fetchedCategories.length > 0) {
-          setCategoryId(fetchedCategories[0].id); // Set default category
+          setCategoryId(fetchedCategories[0].id);
         }
       } catch (err: any) {
         console.error('Fetch categories error:', err);
         setError('Không thể tải danh mục sản phẩm');
+        setCategories([]);
       } finally {
         setCategoriesLoading(false);
       }
@@ -93,12 +90,11 @@ const PostProduct: React.FC = () => {
   };
 
   const handleTakePhoto = () => {
-    const options = {
-      mediaType: 'photo' as const,
-      quality: 1,
+    const options: CameraOptions = {
+      mediaType: 'photo',
+      quality: 1 as 0 | 0.1 | 0.2 | 0.3 | 0.4 | 0.5 | 0.6 | 0.7 | 0.8 | 0.9 | 1,
       maxWidth: 500,
       maxHeight: 500,
-      saveToPhotos: true,
     };
 
     launchCamera(options, (response) => {
@@ -114,9 +110,9 @@ const PostProduct: React.FC = () => {
   };
 
   const handleSelectFromGallery = () => {
-    const options = {
-      mediaType: 'photo' as const,
-      quality: 1,
+    const options: ImageLibraryOptions = {
+      mediaType: 'photo',
+      quality: 1 as 0 | 0.1 | 0.2 | 0.3 | 0.4 | 0.5 | 0.6 | 0.7 | 0.8 | 0.9 | 1,
       maxWidth: 500,
       maxHeight: 500,
     };
@@ -137,7 +133,6 @@ const PostProduct: React.FC = () => {
     setError(null);
     setLoading(true);
 
-    // Validate required inputs
     if (!name) {
       setError('Tên sản phẩm là bắt buộc');
       setLoading(false);
@@ -154,7 +149,6 @@ const PostProduct: React.FC = () => {
       return;
     }
 
-    // Validate variant inputs if provided
     if (sku || price || stock) {
       if (!sku || !price || !stock) {
         setError('SKU, giá và tồn kho phải được cung cấp cùng nhau');
@@ -200,9 +194,7 @@ const PostProduct: React.FC = () => {
         headers: { 'Content-Type': 'multipart/form-data' },
       });
 
-      Alert.alert('Thành công', 'Sản phẩm đã được đăng thành công!', [
-        { text: 'OK', onPress: () => navigation.navigate('Home') },
-      ]);
+      Alert.alert('Thành công', 'Sản phẩm đã được đăng thành công!');
     } catch (err: any) {
       console.error('Post product error:', err);
       let errorMessage = 'Không thể đăng sản phẩm';
@@ -248,7 +240,6 @@ const PostProduct: React.FC = () => {
 
   return (
     <SafeAreaView style={styles.container}>
-      {/* Header */}
       <View style={styles.header}>
         <Pressable
           onPress={() => navigation.goBack()}
@@ -261,7 +252,6 @@ const PostProduct: React.FC = () => {
       </View>
       <View style={styles.divider} />
 
-      {/* Form */}
       <KeyboardAvoidingView
         style={styles.content}
         behavior={Platform.OS === 'ios' ? 'padding' : 'height'}

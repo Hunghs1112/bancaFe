@@ -1,5 +1,5 @@
 import React from 'react';
-import { View, Text, StyleSheet, Pressable, Image } from 'react-native';
+import { SafeAreaView, View, Text, StyleSheet, Pressable, Image, TouchableOpacity } from 'react-native';
 import { useNavigation } from '@react-navigation/native';
 import Icon from 'react-native-vector-icons/Ionicons';
 import { useAuth } from '../contexts/AuthContext';
@@ -7,27 +7,43 @@ import { Color, FontFamily, FontSize, Border } from '../styles/GlobalStyles';
 
 const Profile: React.FC = () => {
   const navigation = useNavigation<any>();
-  const { user, logout } = useAuth();
+  const { user, isAuthenticated, logout } = useAuth();
 
   const handleSignOut = async () => {
     const success = await logout();
     if (success) {
-      navigation.navigate('Auth', { screen: 'Login' });
+      navigation.navigate('MainTabs', { screen: 'Home' });
     }
   };
 
+  const handleLogin = () => {
+    navigation.navigate('Auth', { screen: 'Login' });
+  };
+
   const menuItems = [
-    { name: 'About Me', icon: 'person-outline', screen: 'AboutMe' },
-    { name: 'Đăng sản phẩm', icon: 'location-outline', screen: 'PostProduct' },
-    { name: 'My Orders', icon: 'cart-outline', screen: 'MyOrders' },
-    { name: 'My Favorites', icon: 'heart-outline', screen: 'Wishlist' },
-    { name: 'My Address', icon: 'location-outline', screen: 'Address' },
+    { name: 'Thông tin cá nhân', icon: 'person-outline', screen: 'AboutMe' },
+    { name: 'Đăng sản phẩm', icon: 'add-circle-outline', screen: 'PostProduct' },
+    { name: 'Đơn hàng của tôi', icon: 'cart-outline', screen: 'MyOrders' },
+    { name: 'Yêu thích', icon: 'heart-outline', screen: 'Wishlist' },
+    { name: 'Địa chỉ của tôi', icon: 'location-outline', screen: 'Address' },
   ];
 
-  return (
-    <View style={styles.container}>
-  
+  if (!isAuthenticated || !user) {
+    return (
+      <SafeAreaView style={styles.unauthenticatedContainer}>
+        <Icon name="lock-closed-outline" size={48} color={Color.colorGray} />
+        <Text style={styles.unauthenticatedText}>
+          Vui lòng đăng nhập để xem hồ sơ
+        </Text>
+        <TouchableOpacity style={styles.loginButton} onPress={handleLogin}>
+          <Text style={styles.loginButtonText}>Đăng Nhập</Text>
+        </TouchableOpacity>
+      </SafeAreaView>
+    );
+  }
 
+  return (
+    <SafeAreaView style={styles.container}>
       {/* User Info */}
       <View style={styles.userInfo}>
         <Image
@@ -35,8 +51,8 @@ const Profile: React.FC = () => {
           source={require('../assets/avatar.png')}
           resizeMode="cover"
         />
-        <Text style={styles.userName}>{user?.username || 'User'}</Text>
-        <Text style={styles.userEmail}>{user?.email || 'user@example.com'}</Text>
+        <Text style={styles.userName}>{user.name || 'Người dùng'}</Text>
+        <Text style={styles.userEmail}>{user.email || 'user@example.com'}</Text>
       </View>
 
       {/* Menu */}
@@ -54,27 +70,11 @@ const Profile: React.FC = () => {
         ))}
         <Pressable style={styles.menuItem} onPress={handleSignOut}>
           <Icon name="log-out-outline" size={20} color={Color.colorBlack} />
-          <Text style={styles.menuText}>Sign Out</Text>
+          <Text style={styles.menuText}>Đăng Xuất</Text>
           <Icon name="chevron-forward-outline" size={20} color={Color.colorBlack} />
         </Pressable>
       </View>
-
-      {/* Navigation Bar */}
-      <View style={styles.navigation}>
-        <Pressable style={styles.navItem} onPress={() => navigation.navigate('Home')}>
-          <Icon name="home-outline" size={24} color={Color.colorBlack} />
-        </Pressable>
-        <Pressable style={styles.navItem} onPress={() => navigation.navigate('Cart')}>
-          <Icon name="cart-outline" size={24} color={Color.colorBlack} />
-        </Pressable>
-        <Pressable style={styles.navItem} onPress={() => navigation.navigate('Wishlist')}>
-          <Icon name="heart-outline" size={24} color={Color.colorBlack} />
-        </Pressable>
-        <Pressable style={styles.navItem} onPress={() => navigation.navigate('Profile')}>
-          <Icon name="person" size={24} color={Color.primary} />
-        </Pressable>
-      </View>
-    </View>
+    </SafeAreaView>
   );
 };
 
@@ -83,29 +83,31 @@ const styles = StyleSheet.create({
     flex: 1,
     backgroundColor: Color.colorWhite,
   },
-  actionBar: {
-    flexDirection: 'row',
-    justifyContent: 'space-between',
-    paddingHorizontal: 16,
-    paddingTop: 16,
-    paddingBottom: 8,
-  },
-  leftSide: {
-    flexDirection: 'row',
+  unauthenticatedContainer: {
+    flex: 1,
+    backgroundColor: Color.colorWhite,
+    justifyContent: 'center',
     alignItems: 'center',
+    paddingHorizontal: 20,
   },
-  timeText: {
+  unauthenticatedText: {
     fontFamily: FontFamily.poppinsSemiBold,
-    fontSize: FontSize.paragraph3_size,
+    fontSize: FontSize.size_lg,
     color: Color.colorBlack,
-    fontWeight: '600',
+    textAlign: 'center',
+    marginVertical: 16,
   },
-  rightSide: {
-    flexDirection: 'row',
-    alignItems: 'center',
+  loginButton: {
+    backgroundColor: Color.primary,
+    borderRadius: Border.br_8xs,
+    paddingVertical: 14,
+    paddingHorizontal: 32,
   },
-  iconMargin: {
-    marginHorizontal: 8,
+  loginButtonText: {
+    color: Color.colorWhite,
+    fontSize: FontSize.paragraph3_size,
+    fontFamily: FontFamily.poppinsSemiBold,
+    textAlign: 'center',
   },
   userInfo: {
     alignItems: 'center',
@@ -157,10 +159,6 @@ const styles = StyleSheet.create({
     backgroundColor: Color.colorWhite,
     borderTopWidth: 1,
     borderTopColor: Color.border,
-    position: 'absolute',
-    bottom: 0,
-    left: 0,
-    right: 0,
   },
   navItem: {
     alignItems: 'center',

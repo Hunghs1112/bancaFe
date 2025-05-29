@@ -1,16 +1,17 @@
-import * as React from 'react';
-import { useState, useCallback } from 'react';
+import React, { useState, useCallback } from 'react';
 import {
-  Pressable,
-  StyleSheet,
-  Text,
   View,
+  Text,
+  StyleSheet,
+  Pressable,
   Image,
   ActivityIndicator,
+  SafeAreaView,
 } from 'react-native';
-import { useNavigation, useFocusEffect } from '@react-navigation/native';
 import Icon from 'react-native-vector-icons/Ionicons';
+import { useNavigation, useFocusEffect, useRoute } from '@react-navigation/native';
 import api from '../services/api';
+import { Color, FontFamily, FontSize } from '../styles/GlobalStyles';
 import { useWishlist, Product as WishlistProduct } from '../contexts/WishlistContext';
 import { useAuth } from '../contexts/AuthContext';
 
@@ -33,32 +34,40 @@ interface Variant {
   stock: number;
 }
 
+interface RouteParams {
+  categoryId: number;
+  categoryName: string;
+}
+
 type NavigationProp = {
   navigate: (screen: string, params?: any) => void;
+  goBack: () => void;
 };
 
-const ItemSection: React.FC = () => {
-  const [products, setProducts] = useState<Product[]>([]);
-  const [loading, setLoading] = useState<boolean>(true);
-  const [error, setError] = useState<string | null>(null);
+const CategoryProducts: React.FC = () => {
   const navigation = useNavigation<NavigationProp>();
+  const route = useRoute();
+  const { categoryId, categoryName } = route.params as RouteParams;
+  const [products, setProducts] = useState<Product[]>([]);
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState<string | null>(null);
   const { addToWishlist, removeFromWishlist, isWishlisted } = useWishlist();
   const { user } = useAuth();
 
-  const BACKEND_BASE_URL = 'http://10.0.2.2:5000'; // Adjust if backend runs elsewhere
+  const BACKEND_BASE_URL = 'http://10.0.2.2:5000';
 
   const getImageUrl = (imagePath: string | undefined): string => {
-    if (!imagePath) return ''; // Handle undefined or empty image
-    if (imagePath.startsWith('http')) return imagePath; // External URLs
-    if (imagePath.startsWith('/uploads')) return `${BACKEND_BASE_URL}${imagePath}`; // Local uploads
-    return imagePath; // Fallback
+    if (!imagePath) return '';
+    if (imagePath.startsWith('http')) return imagePath;
+    if (imagePath.startsWith('/uploads')) return `${BACKEND_BASE_URL}${imagePath}`;
+    return imagePath;
   };
 
   const fetchProducts = useCallback(async () => {
     try {
       setLoading(true);
       setError(null);
-      const response = await api.get('/products');
+      const response = await api.get(`/products?category_id=${categoryId}`);
       const productData = Array.isArray(response.data.products)
         ? response.data.products
         : [];
@@ -78,7 +87,7 @@ const ItemSection: React.FC = () => {
     } finally {
       setLoading(false);
     }
-  }, []);
+  }, [categoryId]);
 
   useFocusEffect(
     useCallback(() => {
@@ -111,23 +120,29 @@ const ItemSection: React.FC = () => {
   };
 
   return (
-    <View style={styles.container}>
-      {/* Header section */}
-      <View style={styles.headerSection}>
-        <Text style={styles.headerTitle}>Sản phẩm nổi bật</Text>
-        <Icon name="arrow-forward" size={20} color="#000" style={styles.headerIcon} />
+    <SafeAreaView style={styles.container}>
+      {/* Header with back button */}
+      <View style={styles.header}>
+        <Pressable
+          onPress={() => navigation.goBack()}
+          style={styles.backButton}
+          accessibilityLabel="Quay lại"
+        >
+          <Icon name="arrow-back" size={24} color={Color.textPrimary} />
+        </Pressable>
+        <Text style={styles.headerTitle}>Danh sách yêu thích</Text>
       </View>
-
+      
       {/* Loading state */}
       {loading ? (
-        <View style={styles.centeredContainer}>
-          <ActivityIndicator size="large" color="#6cc51d" />
+        <View style={styles.loadingContainer}>
+          <ActivityIndicator size="large" color={Color.primary} />
           <Text style={styles.loadingText}>Đang tải sản phẩm...</Text>
         </View>
       ) : error ? (
         <Text style={styles.errorText}>Lỗi: {error}</Text>
       ) : !Array.isArray(products) || products.length === 0 ? (
-        <Text style={styles.emptyText}>Hiện không có sản phẩm nào</Text>
+        <Text style={styles.emptyText}>Không có sản phẩm trong danh mục này</Text>
       ) : (
         <View style={styles.productsGrid}>
           {products.map((product) => {
@@ -185,7 +200,8 @@ const ItemSection: React.FC = () => {
                     <Icon
                       name={liked ? 'heart' : 'heart-outline'}
                       size={20}
-                      color={liked ? '#FFC0CB' : '#000'}
+                      color={liked ? '#FFC0CB' : Color.textPrimary}
+                      style={styles.heartIconStyle}
                     />
                   </Pressable>
                   
@@ -194,7 +210,7 @@ const ItemSection: React.FC = () => {
                     <Icon
                       name="eye-outline"
                       size={18}
-                      color="#000"
+                      color={Color.textPrimary}
                       style={styles.eyeIcon}
                     />
                     <Text style={styles.detailsText}>
@@ -207,62 +223,72 @@ const ItemSection: React.FC = () => {
           })}
         </View>
       )}
-    </View>
+    </SafeAreaView>
   );
 };
 
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    paddingTop: 48,
-    paddingBottom: 36,
+    backgroundColor: Color.backgroundLight,
   },
-  headerSection: {
-    width: '100%',
-    height: 27,
-    marginBottom: 15,
-    position: 'relative',
+  header: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    paddingHorizontal: 16,
+    paddingVertical: 12,
+    backgroundColor: Color.colorWhite,
+    borderBottomWidth: 1,
+    borderBottomColor: Color.border,
+  },
+  backButton: {
+    padding: 8,
   },
   headerTitle: {
+    flex: 1,
+    fontSize: FontSize.size_xl,
+    fontFamily: FontFamily.poppinsBold,
+    color: Color.textPrimary,
+    textAlign: 'center',
+  },
+  title: {
     fontSize: 18,
     fontWeight: '800',
+    fontFamily: FontFamily.poppinsMedium,
     color: '#000',
-    textAlign: 'left',
-    position: 'absolute',
-    left: 0,
+    marginLeft: 10,
   },
-  headerIcon: {
-    position: 'absolute',
-    right: 0,
-    top: 3,
-  },
-  centeredContainer: {
+  loadingContainer: {
     flex: 1,
     justifyContent: 'center',
     alignItems: 'center',
     marginTop: 20,
   },
   loadingText: {
-    fontSize: 16,
-    fontWeight: '500',
-    color: '#000',
+    fontSize: FontSize.paragraph3_size,
+    fontFamily: FontFamily.poppinsMedium,
+    color: Color.textPrimary,
     marginTop: 10,
   },
   errorText: {
-    fontSize: 16,
-    fontWeight: '500',
-    color: 'red',
+    fontSize: FontSize.paragraph3_size,
+    fontFamily: FontFamily.poppinsMedium,
+    color: Color.error,
     textAlign: 'center',
     marginTop: 20,
   },
   emptyText: {
-    fontSize: 16,
-    fontWeight: '500',
-    color: '#000',
+    fontSize: FontSize.paragraph3_size,
+    fontFamily: FontFamily.poppinsMedium,
+    color: Color.textPrimary,
     textAlign: 'center',
     marginTop: 20,
   },
   productsGrid: {
+    paddingTop: 8,
+    paddingLeft: 6,
+    paddingRight: 6,
+    height: 260,
     flexDirection: 'row',
     flexWrap: 'wrap',
     justifyContent: 'space-between',
@@ -278,98 +304,127 @@ const styles = StyleSheet.create({
     position: 'relative',
   },
   productItemBackground: {
-    backgroundColor: '#fff',
+    backgroundColor: Color.backgroundWhite,
     position: 'absolute',
     width: '100%',
     height: '100%',
+    left: '0%',
+    top: '0%',
     borderRadius: 5,
   },
   imageContainer: {
+    height: '40.17%',
+    width: '50.28%',
+    top: '8.97%',
+    right: '26.52%',
+    bottom: '50.85%',
+    left: '23.2%',
     position: 'absolute',
-    width: '50%',
-    height: '40%',
-    top: '9%',
-    left: '23%',
   },
   imageBgCircle: {
-    position: 'absolute',
-    width: '92%',
-    height: '89%',
-    bottom: '10%',
-    left: '8%',
-    backgroundColor: '#f5f5f5',
+    height: '89.36%',
+    width: '92.31%',
+    bottom: '10.64%',
+    left: '7.69%',
+    right: '0%',
+    top: '0%',
+    backgroundColor: Color.backgroundLight,
     borderRadius: 50,
+    position: 'absolute',
   },
   productImage: {
-    position: 'absolute',
     top: 22,
     left: 0,
     width: 91,
     height: 72,
+    position: 'absolute',
   },
   priceText: {
-    position: 'absolute',
-    top: '52.5%',
-    left: '40%',
+    top: '52.56%',
+    left: '40.88%',
     color: '#6cc51d',
+    fontFamily: FontFamily.paragraph3,
     fontWeight: '500',
-    fontSize: 16,
+    fontSize: FontSize.paragraph3_size,
     textAlign: 'center',
+    position: 'absolute',
   },
   productName: {
-    position: 'absolute',
-    top: '59.8%',
-    left: '40%',
+    top: '59.83%',
+    left: '41.99%',
     fontSize: 15,
     fontWeight: '600',
+    fontFamily: FontFamily.poppinsSemiBold,
     color: '#000',
     textAlign: 'center',
+    position: 'absolute',
   },
   productDescription: {
-    position: 'absolute',
-    top: '70%',
-    left: '35%',
+    top: '70.09%',
+    left: '37.04%',
     color: '#868889',
+    fontFamily: FontFamily.paragraph3,
     fontWeight: '500',
-    fontSize: 16,
+    fontSize: FontSize.paragraph3_size,
     textAlign: 'center',
+    position: 'absolute',
   },
   divider: {
-    position: 'absolute',
-    top: '82%',
+    height: '100%',
     width: '100%',
+    top: '82.26%',
+    right: '-0.28%',
+    bottom: '17.31%',
+    left: '-0.28%',
+    borderStyle: 'solid',
+    borderColor: Color.border,
     borderTopWidth: 1,
-    borderColor: '#e0e0e0',
+    position: 'absolute',
   },
   wishlistButton: {
+    height: '8.84%',
+    width: '10.84%',
+    top: '3.85%',
+    right: '4.97%',
+    bottom: '89.32%',
+    left: '86.19%',
     position: 'absolute',
-    top: '4%',
-    right: '5%',
-    width: 24,
-    height: 24,
-    justifyContent: 'center',
-    alignItems: 'center',
+  },
+  heartIconStyle: {
+    width: '100%',
+    height: '100%',
+    textAlign: 'center',
+    fontSize: 20,
   },
   detailsContainer: {
+    height: '7.69%',
+    width: '57.46%',
+    top: '87.61%',
+    right: '17.13%',
+    bottom: '4.7%',
+    left: '25.41%',
     position: 'absolute',
-    left: '25%',
-    bottom: '5%',
-    width: '58%',
-    height: '8%',
-    flexDirection: 'row',
-    alignItems: 'center',
   },
   eyeIcon: {
+    fontSize: 18,
+    color: Color.textPrimary,
+    right: '87.5%',
+    bottom: '16.67%',
+    left: '0%',
+    top: '0%',
+    width: '20%',
     position: 'absolute',
-    left: 0,
   },
   detailsText: {
+    color: '#010101',
+    textAlign: 'left',
+    left: '21.15%',
+    top: '0%',
     position: 'absolute',
-    left: '21%',
-    fontSize: 16,
+    fontFamily: FontFamily.paragraph3,
     fontWeight: '500',
-    color: '#000',
+    fontSize: FontSize.paragraph3_size,
   },
 });
 
-export default ItemSection;
+export default CategoryProducts;

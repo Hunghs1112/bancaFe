@@ -132,7 +132,7 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     alignItems: 'center',
     paddingHorizontal: 16,
-    paddingVertical: 12,
+    paddingVertical: 16, // Increased for better spacing
     backgroundColor: Color.colorWhite,
   },
   backButton: {
@@ -155,6 +155,7 @@ const styles = StyleSheet.create({
     flex: 1,
     paddingHorizontal: 20,
     paddingTop: 16,
+    paddingBottom: 20, // Added to ensure content is above home indicator
   },
   listContainer: {
     paddingBottom: 100,

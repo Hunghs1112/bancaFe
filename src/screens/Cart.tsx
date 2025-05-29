@@ -15,6 +15,7 @@ import Icon from 'react-native-vector-icons/Ionicons';
 import api from '../services/api';
 import { FontFamily, FontSize, Color, Border } from '../styles/GlobalStyles';
 import { useAuth } from '../contexts/AuthContext';
+import { useSafeAreaInsets } from 'react-native-safe-area-context';
 
 type RootStackParamList = {
   Auth: { screen: string };
@@ -60,12 +61,13 @@ interface AuthContextType {
 const CartScreen: React.FC = () => {
   const { user } = useAuth() as AuthContextType;
   const navigation = useNavigation<NavigationProp>();
+  const insets = useSafeAreaInsets();
   const [cart, setCart] = useState<Cart | null>(null);
   const [cartItems, setCartItems] = useState<CartItem[]>([]);
   const [loading, setLoading] = useState<boolean>(true);
   const [error, setError] = useState<string | null>(null);
 
-  const BACKEND_BASE_URL = 'http://10.0.2.2:5000'; // Use 'http://10.0.2.2:5000' for Android emulator if needed
+  const BACKEND_BASE_URL = 'http://10.0.2.2:5000';
 
   const getImageUrl = (imagePath: string | null) => {
     if (!imagePath) return '';
@@ -232,7 +234,9 @@ const CartScreen: React.FC = () => {
   if (loading) {
     return (
       <SafeAreaView style={styles.container}>
-        <ActivityIndicator size="large" color={Color.primary} />
+        <View style={styles.loadingContainer}>
+          <ActivityIndicator size="large" color={Color.primary} />
+        </View>
       </SafeAreaView>
     );
   }
@@ -250,7 +254,6 @@ const CartScreen: React.FC = () => {
         <Text style={styles.headerTitle}>Giỏ hàng</Text>
       </View>
       <View style={styles.divider} />
-
       <View style={styles.content}>
         {error && <Text style={styles.errorText}>{error}</Text>}
         {cartItems.length > 0 ? (
@@ -261,7 +264,7 @@ const CartScreen: React.FC = () => {
               keyExtractor={(item) => String(item.id)}
               contentContainerStyle={styles.list}
             />
-            <View style={styles.checkoutContainer}>
+            <View style={[styles.checkoutContainer, { paddingBottom: insets.bottom }]}>
               <Text style={styles.totalText}>
                 Tổng cộng:{' '}
                 {cartItems
@@ -295,6 +298,11 @@ const styles = StyleSheet.create({
   container: {
     flex: 1,
     backgroundColor: Color.backgroundWhite,
+  },
+  loadingContainer: {
+    flex: 1,
+    justifyContent: 'center',
+    alignItems: 'center',
   },
   header: {
     flexDirection: 'row',
@@ -389,13 +397,14 @@ const styles = StyleSheet.create({
   },
   checkoutContainer: {
     position: 'absolute',
-    bottom: 86,
+    bottom: 80,
     left: 16,
     right: 16,
     backgroundColor: Color.colorWhite,
     padding: 12,
     borderRadius: Border.br_sm,
     elevation: 3,
+    height: 112
   },
   totalText: {
     fontSize: FontSize.size_lg,
@@ -408,6 +417,7 @@ const styles = StyleSheet.create({
     borderRadius: Border.br_sm,
     padding: 12,
     alignItems: 'center',
+    
   },
   buttonText: {
     color: Color.colorWhite,
